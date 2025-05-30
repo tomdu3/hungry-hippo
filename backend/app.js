@@ -38,13 +38,30 @@ const PORT = process.env.PORT || 3000;
 app.use('/api/webhook', express.raw({ type: 'application/json' }), handleStripeWebhook);
 
 // Configure CORS
+const allowedOrigins = [
+  process.env.FRONTEND_PROD_URL,
+  process.env.FRONTEND_URL
+].filter(Boolean); // Remove any undefined values
+
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'development' ? process.env.FRONTEND_URL : process.env.FRONTEND_PROD_URL,
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1 || origin.includes('render.com')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 200 // Some legacy browsers choke on 204
 };
+
 app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // Enable preflight for all routes
 
 // Parse JSON and cookies
 app.use(express.json());
