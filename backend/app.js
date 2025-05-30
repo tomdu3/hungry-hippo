@@ -1,24 +1,16 @@
 const express = require('express');
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
-const dotenv = require('dotenv');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
+const dotenv = require('dotenv');
 
 dotenv.config();
 
 const swaggerOptions = require('./swagger.json');
 const app = express();
 const db = require('./models');
-
-// CORS Middleware
-app.use(cors({
-  credentials: true,
-  origin: process.env.FRONTEND_URL,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
-}));
 
 // Swagger
 const swaggerDocs = swaggerJsdoc(swaggerOptions);
@@ -44,6 +36,15 @@ const PORT = process.env.PORT || 3000;
 
 // Handle Stripe Webhook
 app.use('/api/webhook', express.raw({ type: 'application/json' }), handleStripeWebhook);
+
+// Configure CORS
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'development' ? process.env.FRONTEND_URL : process.env.FRONTEND_PROD_URL,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+app.use(cors(corsOptions));
 
 // Parse JSON and cookies
 app.use(express.json());
